@@ -16,10 +16,13 @@
 ;; Utility
 ;;
 
+; Wrapped to allow keyword arguments.
 (define* win32/message-box
   "Show a message box."
-  (foreign-lambda* void ((c-string message) (c-string title))
-   "MessageBox(NULL, message, title, MB_OK);"))
+  (let ((%message-box (foreign-lambda* void ((c-string message) (c-string title))
+                      "MessageBox(NULL, message, title, MB_OK);")))
+    (lambda (message #!key (title "Message"))
+      (%message-box message title))))
 
 
 ;;
