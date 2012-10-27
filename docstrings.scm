@@ -6,15 +6,20 @@
 
 (define-syntax (define* form rename compare)
   (let* ((args-form (second form))
-         (proc-name (first args-form))
+         (proc-name (if (list? args-form)
+                      (first args-form)
+                      args-form))
          (doc (third form))
          (body (drop form 3))
          (define% (rename 'define)))
-    (hash-table-set! *documentation-hash-table* proc-name (list doc body)) 
+    (hash-table-set! *documentation-hash-table* proc-name (list doc args-form body)) 
     `(,define% ,args-form ,@body)))
 
 (define* (help)
   "Print a list of documented procedures."
   (hash-table-walk *documentation-hash-table*
     (lambda (key val)
-      (printf "~a => ~a~n ~a~n~n" key (first val) (second val))))) 
+      (let ((doc (first val))
+            (args (second val))
+            (body (third val))) 
+        (printf "~a => ~a~n ~a~n~n" key doc body)))))
