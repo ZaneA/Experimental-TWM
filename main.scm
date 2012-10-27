@@ -20,9 +20,9 @@
      (set! return (lambda () (k #f)))
      (repl))))
 
-; Throw a critical error, causing HashTWM3 to shutdown.
-(define* (critical-error message)
-  "Throw a critical error, causing HashTWM3 to break to a REPL."
+; This is used in win32-wrappers.scm for FailureCB.
+(define* (failure-callback message)
+  "Failure callback, we are about to close but can break to REPL first."
   (win32/with-console
     (printf "ERROR: ~a~n" message) 
     (break-to-repl)))
@@ -30,7 +30,7 @@
 ; Do stuff.
 (define* (main)
   "Main entry-point of HashTWM3."
-  (win32/message-box "HashTWM3" "Welcome")
-  (critical-error "Nothing implemented yet!"))
+  (win32/create-message-window)
+  (win32/main-loop))
 
 (main)

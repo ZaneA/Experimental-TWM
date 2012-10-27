@@ -97,3 +97,53 @@
     "static char class;
      GetClassName(hwnd, class sizeof(class));
      C_return(&class);"))
+
+
+;;
+;; Low level Windows setup and event loop
+;;
+
+; Internally used to forward messages to the user modifiable proc
+(define-external (FailureCB (c-string err)) void
+  (failure-callback err))
+
+(define* win32/create-message-window
+  "Create a message window for processing events."
+  (foreign-safe-lambda* void ()
+    "HWND hwnd;
+     WNDCLASSEX winClass = { 0 };
+     winClass.cbSize = sizeof(WNDCLASSEX);
+     winClass.lpfnWndProc = WndProc;
+     winClass.hInstance = hInstance;
+     winClass.lpszClassName = \"HashTWM3\";
+     
+     if (!RegisterClassEx(&winClass)) {
+       FailureCB(\"Error Registering Window Class\");
+       return 0;
+     }
+     
+     hwnd = CreateWindowEx(0, \"HashTWM3\", \"HashTWM3\", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
+     
+     if (!hwnd) {
+       FailureCB(\"Error Creating Window\");
+       return 0;
+     }"
+                   )
+  )
+
+(define* (win32/process-wnd-proc hwnd msg w-param l-param)
+  "WndProc implementation."
+  (printf "HWND: ~a, MSG: ~a, WPARAM: ~a, LPARAM: ~a~n" hwnd msg w-param l-param))
+
+; Internally used to forward messages to the user modifiable proc
+(define-external (WndProc (c-int hwnd) (c-unsigned-int msg) (wparam w-param) (lparam l-param)) lresult
+  (win32/process-wnd-proc hwnd msg w-param l-param))
+
+(define* (win32/main-loop)
+  "Win32 API main loop."
+  (foreign-safe-lambda* void ()
+    "MSG msg;
+     while (GetMessage(&msg, NULL, 0, 0) > 0) {
+       TranslateMessage(&msg);
+       DispatchMessage(&msg);
+     }"))
