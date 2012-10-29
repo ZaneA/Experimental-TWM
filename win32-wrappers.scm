@@ -47,7 +47,7 @@
 ; Macro as syntactic sugar
 (define-syntax win32/with-console
   (syntax-rules ()
-    [_ body ...] (win32/with-console* (lambda () body ...))))
+    [(_ body ...) (win32/with-console* (lambda () body ...))]))
 
 (define* win32/print-to-console
   "Print to an open console."
@@ -86,14 +86,14 @@
 
 (define* win32/get-window-title
   "Get the window title from the provided HWND."
-  (foreign-lambda* c-string ((c-int hwnd))
+  (foreign-lambda* c-string ((c-pointer hwnd))
     "static char title[256];
      GetWindowText(hwnd, title, sizeof(title));
      C_return(&title);"))
 
 (define* win32/get-window-class
   "Get the window class from the provided HWND."
-  (foreign-lambda* c-string ((c-int hwnd))
+  (foreign-lambda* c-string ((c-pointer hwnd))
     "static char class;
      GetClassName(hwnd, class sizeof(class));
      C_return(&class);"))
@@ -136,7 +136,7 @@
   (printf "HWND: ~a, MSG: ~a, WPARAM: ~a, LPARAM: ~a~n" hwnd msg w-param l-param))
 
 ; Internally used to forward messages to the user modifiable proc
-(define-external (WndProc (c-int hwnd) (c-unsigned-int msg) (wparam w-param) (lparam l-param)) lresult
+(define-external (WndProc (c-pointer hwnd) (unsigned-int msg) (unsigned-int w-param) (long l-param)) long
   (win32/process-wnd-proc hwnd msg w-param l-param))
 
 (define* (win32/main-loop)

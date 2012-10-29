@@ -1,2 +1,3 @@
 #!/bin/sh
-csc -o hashtwm3 -static -inline -gui -strip main.scm
+export CSC_OPTIONS="-static -inline -gui -strip -cc i486-mingw32-gcc"
+csc -o hashtwm3 main.scm
