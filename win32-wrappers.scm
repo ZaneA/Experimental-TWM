@@ -95,7 +95,7 @@
   "Get the window class from the provided HWND."
   (foreign-lambda* c-string ((c-pointer hwnd))
     "static char class;
-     GetClassName(hwnd, class sizeof(class));
+     GetClassName(hwnd, class, sizeof(class));
      C_return(&class);"))
 
 
@@ -109,7 +109,7 @@
 
 (define* win32/create-message-window
   "Create a message window for processing events."
-  (foreign-safe-lambda* void ()
+  (foreign-safe-lambda* void ((c-pointer hInstance))
     "HWND hwnd;
      WNDCLASSEX winClass = { 0 };
      winClass.cbSize = sizeof(WNDCLASSEX);
