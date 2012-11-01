@@ -11,6 +11,8 @@
 #include <windows.h>
 ")
 
+;(define-foreign-type lpstr "LPSTR")
+
 
 ;;
 ;; Utility
@@ -109,7 +111,7 @@
 
 (define* win32/create-message-window
   "Create a message window for processing events."
-  (foreign-safe-lambda* void ((c-pointer hInstance))
+  (foreign-safe-lambda* int ((c-pointer hInstance))
     "HWND hwnd;
      WNDCLASSEX winClass = { 0 };
      winClass.cbSize = sizeof(WNDCLASSEX);
@@ -119,14 +121,14 @@
      
      if (!RegisterClassEx(&winClass)) {
        FailureCB(\"Error Registering Window Class\");
-       return 0;
+       C_return(0);
      }
      
      hwnd = CreateWindowEx(0, \"HashTWM3\", \"HashTWM3\", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
      
      if (!hwnd) {
        FailureCB(\"Error Creating Window\");
-       return 0;
+       C_return(0);
      }"
                    )
   )
