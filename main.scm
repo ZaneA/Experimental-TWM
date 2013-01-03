@@ -24,7 +24,9 @@
 (define* (failure-callback message)
   "Failure callback, we are about to close but can break to REPL first."
   (win32/with-console
-    (printf "ERROR: ~a~n" message) 
+    (let ((msg (format "ERROR: ~a; error code ~a~n" message (win32/get-last-error))))
+      (display msg)
+      (win32/message-box msg))
     (break-to-repl)))
 
 ; Do stuff.

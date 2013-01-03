@@ -6,9 +6,10 @@
 
 (foreign-declare "
 #define WIN32_LEAN_AND_MEAN
-#define WINVER        0x0501
-#define _WIN32_WINNT  0x0501
+#define WINVER 0x0501
+#define _WIN32_WINNT 0x0501
 #include <windows.h>
+#define APP_NAME \"HashTWM3\"
 ")
 
 ;(define-foreign-type lpstr "LPSTR")
@@ -42,7 +43,7 @@
 ; Helper for doing something with an open console
 (define* (win32/with-console* proc)
   "Helper for doing something with an open console."
-  (win32-open-console)
+  (win32/open-console)
   (proc)
   (win32-close-console))
 
@@ -56,7 +57,7 @@
   (foreign-lambda* void ((c-string line))
    "HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
     if (out) {
-      SetConsoleTitle(\"HashTWM3 REPL\");
+      SetConsoleTitle(APP_NAME\" REPL\");
       DWORD written;
       WriteConsole(out, line, strlen(line), &written, NULL);
     }"))
@@ -86,6 +87,10 @@
 ;; Windows
 ;;
 
+(define* win32/get-last-error
+  "Retrieve the calling thread's last-error as a string"
+  (foreign-lambda int "GetLastError"))
+
 (define* win32/get-window-title
   "Get the window title from the provided HWND."
   (foreign-lambda* c-string ((c-pointer hwnd))
@@ -111,31 +116,35 @@
 
 (define* win32/create-message-window
   "Create a message window for processing events."
-  (foreign-safe-lambda* int ((c-pointer hInstance))
+  (foreign-safe-lambda* int ()
     "HWND hwnd;
      WNDCLASSEX winClass = { 0 };
      winClass.cbSize = sizeof(WNDCLASSEX);
      winClass.lpfnWndProc = WndProc;
-     winClass.hInstance = hInstance;
-     winClass.lpszClassName = \"HashTWM3\";
+     winClass.hInstance = GetModuleHandle(NULL);
+     winClass.lpszClassName = APP_NAME;
      
      if (!RegisterClassEx(&winClass)) {
        FailureCB(\"Error Registering Window Class\");
        C_return(0);
      }
      
-     hwnd = CreateWindowEx(0, \"HashTWM3\", \"HashTWM3\", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
+     hwnd = CreateWindowEx(0, APP_NAME, APP_NAME, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, GetModuleHandle(NULL), NULL);
      
      if (!hwnd) {
        FailureCB(\"Error Creating Window\");
        C_return(0);
-     }"
-                   )
+     }")
   )
+
+(define* win32/def-wnd-proc
+  "Return default window proc."
+  (foreign-lambda long "DefWindowProc" c-pointer unsigned-int unsigned-int long))
 
 (define* (win32/process-wnd-proc hwnd msg w-param l-param)
   "WndProc implementation."
-  (printf "HWND: ~a, MSG: ~a, WPARAM: ~a, LPARAM: ~a~n" hwnd msg w-param l-param))
+  (printf "HWND: ~a, MSG: ~a, WPARAM: ~a, LPARAM: ~a~n" hwnd msg w-param l-param)
+  (win32/def-wnd-proc hwnd msg w-param l-param))
 
 ; Internally used to forward messages to the user modifiable proc
 (define-external (WndProc (c-pointer hwnd) (unsigned-int msg) (unsigned-int w-param) (long l-param)) long
