@@ -2,6 +2,8 @@
 ;;; Docstrings support
 ;;;
 
+(use srfi-69)
+
 (define-for-syntax *documentation-hash-table* (make-hash-table))
 
 (define-syntax (define* form rename compare)
