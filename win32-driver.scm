@@ -91,17 +91,17 @@
   "Retrieve the calling thread's last-error as a string"
   (foreign-lambda int "GetLastError"))
 
-(define* win32/get-window-title
+(define* driver/get-window-title
   "Get the window title from the provided HWND."
   (foreign-lambda* c-string ((c-pointer hwnd))
     "static char title[256];
      GetWindowText(hwnd, title, sizeof(title));
      C_return(&title);"))
 
-(define* win32/get-window-class
+(define* driver/get-window-class
   "Get the window class from the provided HWND."
   (foreign-lambda* c-string ((c-pointer hwnd))
-    "static char class;
+    "static char class[256];
      GetClassName(hwnd, class, sizeof(class));
      C_return(&class);"))
 
@@ -114,9 +114,22 @@
 (define-external (FailureCB (c-string err)) void
   (failure-callback err))
 
-(define* win32/create-message-window
-  "Create a message window for processing events."
-  (foreign-safe-lambda* int ()
+(define* win32/def-wnd-proc
+  "Return default window proc."
+  (foreign-lambda long "DefWindowProc" c-pointer unsigned-int unsigned-int long))
+
+(define* (win32/process-wnd-proc hwnd msg w-param l-param)
+  "WndProc implementation."
+  (printf "HWND: ~a, MSG: ~a, WPARAM: ~a, LPARAM: ~a~n" hwnd msg w-param l-param)
+  (win32/def-wnd-proc hwnd msg w-param l-param))
+
+; Internally used to forward messages to the user modifiable proc
+(define-external (WndProc (c-pointer hwnd) (unsigned-int msg) (unsigned-int w-param) (long l-param)) long
+  (win32/process-wnd-proc hwnd msg w-param l-param))
+
+(define* driver/main-loop
+  "Win32 API main loop."
+  (foreign-safe-lambda* void ()
     "HWND hwnd;
      WNDCLASSEX winClass = { 0 };
      winClass.cbSize = sizeof(WNDCLASSEX);
@@ -134,26 +147,9 @@
      if (!hwnd) {
        FailureCB(\"Error Creating Window\");
        C_return(0);
-     }")
-  )
+     }
 
-(define* win32/def-wnd-proc
-  "Return default window proc."
-  (foreign-lambda long "DefWindowProc" c-pointer unsigned-int unsigned-int long))
-
-(define* (win32/process-wnd-proc hwnd msg w-param l-param)
-  "WndProc implementation."
-  (printf "HWND: ~a, MSG: ~a, WPARAM: ~a, LPARAM: ~a~n" hwnd msg w-param l-param)
-  (win32/def-wnd-proc hwnd msg w-param l-param))
-
-; Internally used to forward messages to the user modifiable proc
-(define-external (WndProc (c-pointer hwnd) (unsigned-int msg) (unsigned-int w-param) (long l-param)) long
-  (win32/process-wnd-proc hwnd msg w-param l-param))
-
-(define* (win32/main-loop)
-  "Win32 API main loop."
-  (foreign-safe-lambda* void ()
-    "MSG msg;
+     MSG msg;
      while (GetMessage(&msg, NULL, 0, 0) > 0) {
        TranslateMessage(&msg);
        DispatchMessage(&msg);

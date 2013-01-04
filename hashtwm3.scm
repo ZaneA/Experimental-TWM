@@ -5,9 +5,15 @@
 ; Load the docstring support.
 (include "docstrings.scm")
 
-; Load the Win32 API definitions.
-; Note that these aren't extensive, and only include what we use.
-(include "win32-wrappers.scm")
+; Load a platform driver
+(cond-expand
+  (windows
+    (include "win32-driver.scm"))
+  (unix
+    (include "x11-driver.scm"))
+  (else
+    (printf "No driver for platform ~a" (software-type))
+    (exit)))
 
 ; Have ability to break to a REPL for debugging.
 ; This should eventually create/destroy a console as required.
@@ -32,7 +38,6 @@
 ; Do stuff.
 (define* (main)
   "Main entry-point of HashTWM3."
-  (win32/create-message-window)
-  (win32/main-loop))
+  (driver/main-loop))
 
 (main)
